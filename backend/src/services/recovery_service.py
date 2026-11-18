@@ -13,5 +13,8 @@ def create_recovery(db,data):
     if case is None:raise HTTPException(404,'故障场景不存在')
     if len(db.scalars(select(Recovery.id).where(Recovery.status.in_(['queued','running']))).all())>=20:raise HTTPException(429,'待处理配额20已满')
     logs=db.get(LogSet,case.log_set_id)
-    obj=Recovery(**data.model_dump(),status='queued',snapshot={'log_set':record(logs),'case':record(case)})
+    snapshot={'log_set':record(logs),'case':record(case),
+              'expected_order':data.expected_order or '',
+              'expected_balances':data.expected_balances or None}
+    obj=Recovery(crash_case_id=data.crash_case_id,label=data.label,status='queued',snapshot=snapshot)
     db.add(obj);db.flush();return obj
